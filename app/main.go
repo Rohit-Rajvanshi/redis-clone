@@ -6,9 +6,6 @@ import (
 	"os"
 )
 
-// Ensures gofmt doesn't remove the "net" and "os" imports in stage 1 (feel free to remove this!)
-var _ = net.Listen
-var _ = os.Exit
 
 func main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
@@ -21,20 +18,25 @@ func main() {
 	fmt.Println("Failed to bind to port 6379")
 	os.Exit(1)
 	}
+
+	for{
+
 	conn , err := l.Accept()
 	if err != nil {
 	fmt.Println("Error accepting connection: ", err.Error())
 	os.Exit(1)
 	}
 
-	buff := make([]byte , 1024)
-
-	for{
-		_ , err := conn.Read(buff)
-		if err != nil {
-			fmt.Println("Error Reading the response from client" , err.Error())
-			os.Exit(1)
-		}
-		conn.Write([]byte("+PONG\r\n"))
+	go handler(conn)
 	}
+}
+
+
+func handler(conn net.Conn){
+	buff := make([]byte , 1024)
+	_ , err := conn.Read(buff) 
+	if err != nil {
+		
+	}
+	conn.Write([]byte("+PONG\r\n"))
 }
