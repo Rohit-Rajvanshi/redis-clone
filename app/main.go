@@ -26,7 +26,6 @@ func main() {
 	fmt.Println("Error accepting connection: ", err.Error())
 	os.Exit(1)
 	}
-
 	go handler(conn)
 	}
 }
@@ -36,7 +35,8 @@ func handler(conn net.Conn){
 	buff := make([]byte , 1024)
 	_ , err := conn.Read(buff) 
 	if err != nil {
-		
+		fmt.Print(err.Error())
+		os.Exit(1)
 	}
 	conn.Write([]byte("+PONG\r\n"))
 }
