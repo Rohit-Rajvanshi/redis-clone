@@ -32,11 +32,14 @@ func main() {
 
 
 func handler(conn net.Conn){
+	defer conn.Close()
 	buff := make([]byte , 1024)
-	_ , err := conn.Read(buff) 
-	if err != nil {
-		fmt.Print(err.Error())
-		os.Exit(1)
+	for{
+		_ , err := conn.Read(buff) 
+		if err != nil {
+			fmt.Println(err.Error())
+			break
+		}
+		conn.Write([]byte("+PONG\r\n"))
 	}
-	conn.Write([]byte("+PONG\r\n"))
 }
