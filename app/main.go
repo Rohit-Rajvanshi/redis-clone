@@ -51,9 +51,6 @@ func handler(conn net.Conn){
 		case "echo":
 			rsp := fmt.Sprintf("$%d\r\n%s\r\n" , len(tmp[1]) , tmp[1])
 			conn.Write([]byte(rsp))
-		}
-
-		conn.Write([]byte("+PONG\r\n"))
-		
+		}	
 	}
 }
