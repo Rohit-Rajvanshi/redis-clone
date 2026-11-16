@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strings"
 )
 
 
@@ -20,7 +21,6 @@ func main() {
 	}
 
 	for{
-
 	conn , err := l.Accept()
 	if err != nil {
 	fmt.Println("Error accepting connection: ", err.Error())
@@ -35,11 +35,23 @@ func handler(conn net.Conn){
 	defer conn.Close()
 	buff := make([]byte , 1024)
 	for{
-		_ , err := conn.Read(buff) 
+		byteArg , err := conn.Read(buff) 
 		if err != nil {
 			fmt.Println(err.Error())
 			break
 		}
-		conn.Write([]byte("+PONG\r\n"))
+
+		tmp , err := ParseInput(buff[:byteArg])
+		if err != nil {
+			fmt.Println("Error Parsing the Input" , err)
+			break 
+		}
+
+		switch  strings.ToLower(tmp[0]){
+		case "echo":
+			rsp := fmt.Sprintf("$%d\r\n%s\r\n" , len(tmp[1]) , tmp[1])
+			conn.Write([]byte(rsp))
+		}
+		
 	}
 }
