@@ -1,0 +1,25 @@
+# Claude Code local settings
+.claude/
+
+# Go build output
+/tmp/
+*.exe
+*.test
+*.out
+
+# Redis persistence files from local testing
+*.rdb
+*.aof
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Env / secrets
+.env
