@@ -6,12 +6,18 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 )
 
 type cfg struct {
-		data map[string]string
+		data map[string]*valueBody
 		mu sync.RWMutex
 	}
+
+type valueBody struct {
+	val string
+	expiryTime time.Time
+}
 
 func main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
@@ -25,7 +31,7 @@ func main() {
 	}
 
 	config := cfg{
-				data : make(map[string]string) ,
+				data : make(map[string]*valueBody) ,
 			}
 
 	for{
@@ -71,8 +77,43 @@ func handler(conn net.Conn , config *cfg){
 				continue
 			}
 
+			if len(tmp) == 4 {
+				conn.Write([]byte("-ERR wrong number of arguments for 'set' command\r\n"))
+				continue
+			}
+
+			expiryTime := time.Time{}
+
+			if len(tmp) > 3 {
+				expiryFormat := tmp[3]
+
+				var expiryDuration time.Duration
+
+				if expiryFormat == "EX" {	
+					expiryDuration , err = time.ParseDuration(fmt.Sprintf("%ss" , tmp[4]))
+					if err != nil {
+						conn.Write([]byte("-ERR error parsing the duration for expiry given"))
+						continue 
+					}
+				}else if expiryFormat == "PX" {
+					expiryDuration , err = time.ParseDuration(fmt.Sprintf("%sms" , tmp[4]))
+					if err != nil {
+						conn.Write([]byte("-ERR error parsing the duration for expiry given"))
+						continue 
+					}
+				}else{
+					conn.Write([]byte("-ERR invalid format to Parse , choose either PX or EX"))
+					continue 
+				}
+
+				expiryTime = time.Now().Add(expiryDuration)	
+			}
+
 			config.mu.Lock()
-			config.data[tmp[1]] = tmp[2]
+			config.data[tmp[1]] = &valueBody{
+				val: tmp[2],
+				expiryTime: expiryTime,
+			}
 			config.mu.Unlock()
 
 
@@ -85,13 +126,20 @@ func handler(conn net.Conn , config *cfg){
 				continue
 			}
 
+			currentTime := time.Now()
+
 			config.mu.RLock()
 			val, ok := config.data[tmp[1]]
 			config.mu.RUnlock()
 
 			if ok {
-				fmt.Fprintf(conn, "$%d\r\n%s\r\n", len(val), val)
-			} else {
+				if val.expiryTime.IsZero(){
+					fmt.Fprintf(conn, "$%d\r\n%s\r\n", len(val.val), val.val)
+				}else if currentTime.After(val.expiryTime){
+					delete(config.data , tmp[1])
+					conn.Write([]byte("$-1\r\n"))
+				}
+			}else {
 				conn.Write([]byte("$-1\r\n"))
 			}
 
