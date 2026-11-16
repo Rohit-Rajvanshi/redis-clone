@@ -133,13 +133,18 @@ func handler(conn net.Conn , config *cfg){
 			config.mu.RUnlock()
 
 			if ok {
-				if val.expiryTime.IsZero() || currentTime.Before(val.expiryTime){
+				if val.expiryTime.IsZero() || !currentTime.After(val.expiryTime){
 					fmt.Fprintf(conn, "$%d\r\n%s\r\n", len(val.val), val.val)
-				}else if currentTime.After(val.expiryTime){
-					delete(config.data , tmp[1])
+				}else{
+					config.mu.Lock()
+					cur := config.data[tmp[1]].expiryTime
+					if currentTime.After(cur) && !cur.IsZero(){
+						delete(config.data , tmp[1])
+					}
+					config.mu.Unlock()
 					conn.Write([]byte("$-1\r\n"))
 				}
-			}else {
+			}else {	
 				conn.Write([]byte("$-1\r\n"))
 			}
 
