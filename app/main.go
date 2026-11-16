@@ -78,7 +78,7 @@ func handler(conn net.Conn , config *cfg){
 			}
 
 			if len(tmp) == 4 {
-				conn.Write([]byte("-ERR wrong number of arguments for 'set' command\r\n"))
+				conn.Write([]byte("-ERR wrong number of arguments for 'set' command , provide a duration for expiry\r\n"))
 				continue
 			}
 
@@ -89,13 +89,13 @@ func handler(conn net.Conn , config *cfg){
 
 				var expiryDuration time.Duration
 
-				if expiryFormat == "EX" {	
+				if strings.ToLower(expiryFormat)== "ex" {	
 					expiryDuration , err = time.ParseDuration(fmt.Sprintf("%ss" , tmp[4]))
 					if err != nil {
 						conn.Write([]byte("-ERR error parsing the duration for expiry given"))
 						continue 
 					}
-				}else if expiryFormat == "PX" {
+				}else if strings.ToLower(expiryFormat) == "px" {
 					expiryDuration , err = time.ParseDuration(fmt.Sprintf("%sms" , tmp[4]))
 					if err != nil {
 						conn.Write([]byte("-ERR error parsing the duration for expiry given"))
@@ -133,7 +133,7 @@ func handler(conn net.Conn , config *cfg){
 			config.mu.RUnlock()
 
 			if ok {
-				if val.expiryTime.IsZero(){
+				if val.expiryTime.IsZero() || currentTime.Before(val.expiryTime){
 					fmt.Fprintf(conn, "$%d\r\n%s\r\n", len(val.val), val.val)
 				}else if currentTime.After(val.expiryTime){
 					delete(config.data , tmp[1])
