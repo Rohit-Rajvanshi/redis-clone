@@ -57,3 +57,7 @@ your_program.sh    builds and runs the server locally
 ### Locking the shared store
 
 **Check-then-act race.** In GET, I read the key under a read lock, released the lock, and then deleted it under a write lock if it looked expired. In the gap between those two locks, another client could SET the same key to a fresh value, and my delete would wipe it out. The fix: once I hold the write lock, re-read the key *from the map* and check expiry again before deleting. Re-checking the copy I read earlier isn't enough, because that copy is stale.
+
+### Go slices and `append`
+
+**A slice is a small header, not the data.** A slice value is a struct holding `{pointer to an array, len, cap}`. Copying a slice (for example, with `v := entry.val.([]string)`) copies that header. Both copies point at the same array, but each one has its *own* `len`. My first RPUSH did `v = append(v, x)` on the local copy, so the slice stored in the map never grew. Even when `append` writes into the same shared array, the map's header still has the old `len`, so it never "sees" the new element. If the array runs out of room, `append` allocates a new one, and then the two slices don't even share memory. The rule: **always store the result of `append` back where the slice lives.** The fix was to append into `v`, store `v` back into the map, and use `len(v)` for the reply, since `len` doesn't work on an `any`.

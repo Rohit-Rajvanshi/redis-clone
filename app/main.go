@@ -140,7 +140,7 @@ func handler(conn net.Conn , config *cfg){
 					if ok{	
 						fmt.Fprintf(conn, "$%d\r\n%s\r\n", len(v), v)
 					}else{
-						fmt.Fprintf(conn , "-WRONGTYPE Operation against a key holding the wrong kind of value")
+						fmt.Fprintf(conn , "-WRONGTYPE Operation against a key holding the wrong kind of value\r\n")
 					}
 				}else{
 					config.mu.Lock()
@@ -164,19 +164,20 @@ func handler(conn net.Conn , config *cfg){
 			
 			expiryTime := time.Time{}
 
-			_ , ok := config.data[tmp[1]]
 
-			config.mu.Lock()
+			config.mu.Lock()	
+			_ , ok := config.data[tmp[1]]
 			if ok{
 
 				v , ok := config.data[tmp[1]].val.([]string)
 				if ok{	
 						v = append(v , tmp[2])
+						config.data[tmp[1]].val = v
 						length  := len(v)
 						str := fmt.Sprintf(":%d\r\n" , length)
 						conn.Write([]byte(str))
 					}else{
-						fmt.Fprintf(conn , "-WRONGTYPE Operation against a key holding the wrong kind of value")
+						fmt.Fprintf(conn , "-WRONGTYPE Operation against a key holding the wrong kind of value\r\n")
 					}
 			}else{	
 				config.data[tmp[1]] = &valueBody{
