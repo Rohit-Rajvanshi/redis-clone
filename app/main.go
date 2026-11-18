@@ -163,36 +163,39 @@ func handler(conn net.Conn , config *cfg){
 
 
 			args := []string{}
-			expiryTime := time.Time{}
-
-
-			config.mu.Lock()
 			for i := 2 ; i < len(tmp) ; i++ {
 				args = append(args , tmp[i])
-			}	
-			_ , ok := config.data[tmp[1]]
-			if ok{
+			}
 
-				v , ok := config.data[tmp[1]].val.([]string)
+			length := 0
+			wrongType := false
+
+			config.mu.Lock()
+			x , ok := config.data[tmp[1]]
+			if ok{
+				v , ok := x.val.([]string)
 				if ok{	
 						v = append(v , args...)
-						config.data[tmp[1]].val = v
-						length  := len(v)
-						str := fmt.Sprintf(":%d\r\n" , length)
-						conn.Write([]byte(str))
+						x.val = v
+						length  = len(v)
 					}else{
-						fmt.Fprintf(conn , "-WRONGTYPE Operation against a key holding the wrong kind of value\r\n")
+						wrongType = true 
 					}
 			}else{	
 				config.data[tmp[1]] = &valueBody{
 					val: args,
-					expiryTime: expiryTime,
 				}
-				length := len(args)
-				str := fmt.Sprintf(":%d\r\n" , length)
-				conn.Write([]byte(str))
+				length = len(args)
 			}
 			config.mu.Unlock()
+
+			if !wrongType{
+				fmt.Fprintf(conn , "-WRONGTYPE Operation against a key holding the wrong kind of value\r\n")
+				continue 
+			}
+
+			str := fmt.Sprintf(":%d\r\n" , length)
+			conn.Write([]byte(str))
 
 		default :
 			conn.Write([]byte("+PONG\r\n"))
