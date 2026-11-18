@@ -15,9 +15,11 @@ type cfg struct {
 	}
 
 type valueBody struct {
-	val string
+	val any
 	expiryTime time.Time
 }
+
+
 
 func main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
@@ -134,7 +136,12 @@ func handler(conn net.Conn , config *cfg){
 
 			if ok {
 				if val.expiryTime.IsZero() || !currentTime.After(val.expiryTime){
-					fmt.Fprintf(conn, "$%d\r\n%s\r\n", len(val.val), val.val)
+					v , ok := val.val.(string)
+					if ok{	
+						fmt.Fprintf(conn, "$%d\r\n%s\r\n", len(v), v)
+					}else{
+						fmt.Fprintf(conn , "-WRONGTYPE Operation against a key holding the wrong kind of value")
+					}
 				}else{
 					config.mu.Lock()
 					cur := config.data[tmp[1]].expiryTime
@@ -147,7 +154,39 @@ func handler(conn net.Conn , config *cfg){
 			}else {	
 				conn.Write([]byte("$-1\r\n"))
 			}
+			
+		case "rpush": 
+			if len(tmp) < 3 {
+				conn.Write([]byte("-ERR wrong number of arguments for 'rpush' command\r\n"))
+				continue
+			}
 
+			
+			expiryTime := time.Time{}
+
+			_ , ok := config.data[tmp[1]]
+
+			config.mu.Lock()
+			if ok{
+
+				v , ok := config.data[tmp[1]].val.([]string)
+				if ok{	
+						v = append(v , tmp[2])
+						length  := len(v)
+						str := fmt.Sprintf("%d\r\n" , length)
+						conn.Write([]byte(str))
+					}else{
+						fmt.Fprintf(conn , "-WRONGTYPE Operation against a key holding the wrong kind of value")
+					}
+			}else{	
+				config.data[tmp[1]] = &valueBody{
+					val: []string{tmp[2]},
+					expiryTime: expiryTime,
+				}
+
+				conn.Write([]byte("1\r\n"))
+			}
+			config.mu.Unlock()
 
 		default :
 			conn.Write([]byte("+PONG\r\n"))
