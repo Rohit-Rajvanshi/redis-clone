@@ -188,8 +188,9 @@ func handler(conn net.Conn , config *cfg){
 					val: args,
 					expiryTime: expiryTime,
 				}
-
-				conn.Write([]byte(":1\r\n"))
+				length := len(args)
+				str := fmt.Sprintf(":%d\r\n" , length)
+				conn.Write([]byte(str))
 			}
 			config.mu.Unlock()
 
