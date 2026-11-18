@@ -149,7 +149,7 @@ func handler(conn net.Conn , config *cfg){
 			}
 			config.mu.Unlock()
 
-			if !wrongType{
+			if wrongType{
 				fmt.Fprintf(conn , "-WRONGTYPE Operation against a key holding the wrong kind of value\r\n")
 				continue 
 			}
