@@ -173,7 +173,7 @@ func handler(conn net.Conn , config *cfg){
 				if ok{	
 						v = append(v , tmp[2])
 						length  := len(v)
-						str := fmt.Sprintf("%d\r\n" , length)
+						str := fmt.Sprintf(":%d\r\n" , length)
 						conn.Write([]byte(str))
 					}else{
 						fmt.Fprintf(conn , "-WRONGTYPE Operation against a key holding the wrong kind of value")
@@ -184,7 +184,7 @@ func handler(conn net.Conn , config *cfg){
 					expiryTime: expiryTime,
 				}
 
-				conn.Write([]byte("1\r\n"))
+				conn.Write([]byte(":1\r\n"))
 			}
 			config.mu.Unlock()
 
