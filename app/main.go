@@ -94,17 +94,17 @@ func handler(conn net.Conn , config *cfg){
 				if strings.ToLower(expiryFormat)== "ex" {	
 					expiryDuration , err = time.ParseDuration(fmt.Sprintf("%ss" , tmp[4]))
 					if err != nil {
-						conn.Write([]byte("-ERR error parsing the duration for expiry given"))
+						conn.Write([]byte("-ERR error parsing the duration for expiry given\r\n"))
 						continue 
 					}
 				}else if strings.ToLower(expiryFormat) == "px" {
 					expiryDuration , err = time.ParseDuration(fmt.Sprintf("%sms" , tmp[4]))
 					if err != nil {
-						conn.Write([]byte("-ERR error parsing the duration for expiry given"))
+						conn.Write([]byte("-ERR error parsing the duration for expiry given\r\n"))
 						continue 
 					}
 				}else{
-					conn.Write([]byte("-ERR invalid format to Parse , choose either PX or EX"))
+					conn.Write([]byte("-ERR invalid format to Parse , choose either PX or EX\r\n"))
 					continue 
 				}
 
