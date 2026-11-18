@@ -161,17 +161,21 @@ func handler(conn net.Conn , config *cfg){
 				continue
 			}
 
-			
+
+			args := []string{}
 			expiryTime := time.Time{}
 
 
-			config.mu.Lock()	
+			config.mu.Lock()
+			for i := 2 ; i < len(tmp) ; i++ {
+				args = append(args , tmp[i])
+			}	
 			_ , ok := config.data[tmp[1]]
 			if ok{
 
 				v , ok := config.data[tmp[1]].val.([]string)
 				if ok{	
-						v = append(v , tmp[2])
+						v = append(v , args...)
 						config.data[tmp[1]].val = v
 						length  := len(v)
 						str := fmt.Sprintf(":%d\r\n" , length)
@@ -181,7 +185,7 @@ func handler(conn net.Conn , config *cfg){
 					}
 			}else{	
 				config.data[tmp[1]] = &valueBody{
-					val: []string{tmp[2]},
+					val: args,
 					expiryTime: expiryTime,
 				}
 
